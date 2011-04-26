@@ -1,17 +1,32 @@
+import java.io.BufferedReader;
+import java.io.FileReader;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.logging.FileHandler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.logging.SimpleFormatter;
 
 
-
+/**
+ * Analyze apache log and restart iexplorer if one of the clients are just waiting to connect
+ * 
+ * Test with these arguments:
+ * 15 "taskkill.exe /IM taskmgr.exe" "C:\WINDOWS\system32\taskmgr.exe" "access.log"
+ * 
+ * 
+ * @author Hallvard Nygard <hn@jaermuseet.no>
+ * @author Chris Håland
+ * @see https://github.com/hnJaermuseet/energiquizRestarter
+ *
+ */
 public class energiquizRestarter
 {
 	public static Logger log;
 	
 	static String killtask; // = "taskkill.exe /IM taskmgr.exe";
 	static String startagain; // = "C:\\WINDOWS\\system32\\taskmgr.exe";
+	static String accesslog;
 	
 	/**
 	 * Restarts iexplorer if the clients has not checked in correctly
@@ -85,13 +100,69 @@ public class energiquizRestarter
 	{
 		log.log(Level.INFO, "Checking Apache log");
 		
-		boolean missingPlayer;
+		/* 
+			A successful startup of player 1 looks like this in the log
+			192.168.115.73 - - [18/Apr/2011:07:59:55 +0200] "GET /Player1.html HTTP/1.1" 304 -
+			192.168.115.73 - - [18/Apr/2011:07:59:55 +0200] "GET /AC_RunActiveContent.js HTTP/1.1" 304 -
+			192.168.115.73 - - [18/Apr/2011:07:59:55 +0200] "GET /AC_Flash.js HTTP/1.1" 304 -
+			192.168.115.73 - - [18/Apr/2011:07:59:55 +0200] "GET /Player.swf?startup=1 HTTP/1.1" 304 -
+			192.168.115.73 - - [18/Apr/2011:07:59:55 +0200] "GET /favicon.ico HTTP/1.1" 404 209
+			192.168.115.73 - - [18/Apr/2011:07:59:55 +0200] "GET /XML/config.xml HTTP/1.1" 304 -
+			192.168.115.73 - - [18/Apr/2011:07:59:55 +0200] "GET /XML/messages.xml HTTP/1.1" 304 -
+			192.168.115.73 - - [18/Apr/2011:07:59:55 +0200] "GET /Player_Attract.swf HTTP/1.1" 304 -
+			192.168.115.73 - - [18/Apr/2011:07:59:56 +0200] "GET /MFSocket.swf HTTP/1.1" 304 -
+			192.168.115.73 - - [18/Apr/2011:07:59:59 +0200] "GET /crossdomain.xml HTTP/1.1" 404 213
+			(...) Up to a 3 minutes (...)
+			192.168.115.73 - - [18/Apr/2011:08:00:00 +0200] "GET /Player1.flv HTTP/1.1" 304 -
+			
+			If the last line ("GET /Player1.flv") is missing, the player is "Loading"/"Waiting".
+			A restart of the master might fix this
+		 */
 		
+		// Read access.log file
+		ArrayList<AccesslogLine> lines = new ArrayList<AccesslogLine>();
+		AccesslogLine currentline;
+		String line;
+		BufferedReader in = new BufferedReader(new FileReader(accesslog));
+		while((line = in.readLine()) != null)
+		{
+			currentline = new AccesslogLine(line);
+			if(
+					currentline.dateseconds+(60*60) // One hour
+						> 
+					(System.currentTimeMillis()/1000)
+			)
+			{
+				lines.add(currentline);
+			}
+		}
 		
+		// Looping the last hours backwards
+		boolean player1_found = false;
+		boolean player2_found = false;
+		boolean missing_player = false;
+		for (int i = lines.size()-1; i >= 0 && !missing_player; i--)
+		{
+			currentline = lines.get(i);
+			if(currentline.get.equals("GET /Player1.flv"))
+			{
+				player1_found = true;
+			}
+			else if(currentline.get.equals("GET /Player2.flv"))
+			{
+				player2_found = true;
+			}
+			else if(!player1_found && currentline.get.equals("GET /Player1.html"))
+			{
+				missing_player = true;
+			}
+			else if(!player2_found && currentline.get.equals("GET /Player2.html"))
+			{
+				missing_player = true;
+			}
+		}
 		
-		missingPlayer = true; // TODO: remove
-		
-		if(missingPlayer)
+		if(missing_player)
 		{
 			// Aaaaaaah! Die!!!
 			restartMaster();
@@ -113,3 +184,4 @@ public class energiquizRestarter
 		Runtime.getRuntime().exec(startagain);
 	}
 }
+
