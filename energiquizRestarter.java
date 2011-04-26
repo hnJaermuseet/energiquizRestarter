@@ -84,7 +84,14 @@ public class energiquizRestarter
 			{
 				// Executing
 				checkApacheLog();
-
+			}
+			catch (Exception err) {
+				log.log(Level.SEVERE, "Uncaught exception", err);
+				err.printStackTrace();
+			}
+			
+			try
+			{
 				// Waiting
 				log.log(Level.INFO, "Waiting " + seconds +" seconds...");
 				Thread.sleep(seconds * 1000);
