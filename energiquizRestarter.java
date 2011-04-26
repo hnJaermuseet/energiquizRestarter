@@ -38,13 +38,14 @@ public class energiquizRestarter
 			System.exit(0);
 		}
 		
-		if(args.length < 3)
+		if(args.length < 4)
 		{
 			log.log(Level.SEVERE,
 					"Must give 3 arguments to use this program.\n" +
 					"1: Seconds we should wait.\n" +
 					"2: What we should execute to kill the task, taskkill.exe /IM iexplorer.exe \n"+
-					"3: What we should execute to start again, iexplorer.exe"
+					"3: What we should execute to start again, iexplorer.exe\n" +
+					"4: Location of apaches access.log, c:\\wamp\\logs\\access.log"
 					);
 			System.exit(0);
 			}
@@ -57,8 +58,10 @@ public class energiquizRestarter
 		}
 		killtask = args[1];
 		startagain = args[2];
+		accesslog = args[3];
 		log.log(Level.INFO, "Argument - kill: "+killtask);
 		log.log(Level.INFO, "Argument - startagain: " + startagain);
+		log.log(Level.INFO, "Argument - access.log: " + accesslog);
 		
 		while(true)
 		{
