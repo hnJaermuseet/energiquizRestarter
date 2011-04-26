@@ -134,6 +134,7 @@ public class energiquizRestarter
 		while((line = in.readLine()) != null)
 		{
 			currentline = new AccesslogLine(line);
+			
 			if(
 					currentline.dateseconds+(60*60) // One hour
 						> 
@@ -153,18 +154,22 @@ public class energiquizRestarter
 			currentline = lines.get(i);
 			if(currentline.get.equals("GET /Player1.flv"))
 			{
+				log.log(Level.INFO, "Found player 1");
 				player1_found = true;
 			}
 			else if(currentline.get.equals("GET /Player2.flv"))
 			{
+				log.log(Level.INFO, "Found player 2");
 				player2_found = true;
 			}
 			else if(!player1_found && currentline.get.equals("GET /Player1.html"))
 			{
+				log.log(Level.SEVERE, "Missing player 1");
 				missing_player = true;
 			}
 			else if(!player2_found && currentline.get.equals("GET /Player2.html"))
 			{
+				log.log(Level.SEVERE, "Missing player 2");
 				missing_player = true;
 			}
 		}
